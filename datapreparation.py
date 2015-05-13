@@ -26,20 +26,12 @@ TRAINING_SET_SIZE = 0.7
 VISUALIZE_TRANSFORMATIONS = False
 PREPARE_IMAGES = True
 
-def getNumberOfDuplicates(ordinalCategory=None):
+def getNumberOfDuplicates():
     stats = getDatasetStats()
     cumulativeStats = np.cumsum(stats)
     itemsCount = sum(stats)
     classesCount = len(stats)
-    if ordinalCategory is None:
-        n_dups = [int(round((1.0/classesCount) / (float(classItemsCount) / itemsCount) )) for classItemsCount in stats]
-    else:
-        ordinalStats = [cumulativeStats[ordinalCategory], itemsCount-cumulativeStats[ordinalCategory]]
-        ratio = 1.0*ordinalStats[0]/ordinalStats[1]
-        if ratio > 1:
-            n_dups = [0, int(round(ratio))-1]
-        else:
-            n_dups = [int(round(1.0/ratio))-1, 0]
+    n_dups = [int(round((1.0/classesCount) / (float(classItemsCount) / itemsCount) )) for classItemsCount in stats]
         
     return n_dups
 
@@ -77,7 +69,6 @@ def getNormalizedImage(filename, cropRectangle = True, scale=256):
     hist_equalized_h = exposure.equalize_hist(h)
     hist_equalized_s = exposure.equalize_hist(s)
     hist_equalized_v = exposure.equalize_hist(v)
-    #hist_equalized = exposure.equalize_hist(hsv)
     hist_equalized = np.copy(hsv)
     hist_equalized[:,:,0] = hist_equalized_h
     hist_equalized[:,:,1] = hist_equalized_s
@@ -148,7 +139,6 @@ def getFlippedImage(img):
         plt.show()
     return flipped_ud
 
-
 def determineTargetLabelsAndDataset(trainLabelsFile, testLabelsFile, folderImagesTrain, folderImagesTest):
     labels = [trainLabelsFile, testLabelsFile]
     folders = [folderImagesTrain, folderImagesTest]
@@ -186,17 +176,12 @@ def saveAugmentedImages(images, folder, labelsFile, label):
         fname = "%s/%s.jpeg" % (folder, imName)
         io.imsave(fname, img)      
             
-def splitDatasetToTrainingAndTestDataset(SOURCE_IMAGES_FOLDER_TRAIN, folderImagesTrain, folderImagesTest, trainLabelsFile, testLabelsFile, ordinalCategory=None):
-    duplicatesCount = getNumberOfDuplicates(ordinalCategory=ordinalCategory)
+def splitDatasetToTrainingAndTestDataset(SOURCE_IMAGES_FOLDER_TRAIN, folderImagesTrain, folderImagesTest, trainLabelsFile, testLabelsFile):
+    duplicatesCount = getNumberOfDuplicates()
     imagesCount, items = getItemsFromFile(filename = TRAIN_LABELS_FILE_SOURCE, excludeHeader = True)
     itemsDict = {}
     for item in items:
         name, lbl = item.split(",")
-        if not ordinalCategory is None:
-            if int(lbl) <= category:
-                lbl = 0
-            else:
-                lbl = 1
             
         itemsDict[name] = int(lbl)
         
@@ -232,94 +217,79 @@ def splitDatasetToTrainingAndTestDataset(SOURCE_IMAGES_FOLDER_TRAIN, folderImage
                 
     elapsed_time = time.time() - start_time
     print "Processed %d of %d items. Execution time: %.3f s" % (imagesProcessedCount, imagesCount, elapsed_time) 
+
+def prepareDatasetsForSelectedConfiguration(conf, prepareImages=False):
+    selectedFolder, sourceImagesFolderTrain, sourceImagesFolderTest, folderImagesTrain, folderImagesTest, FolderImagesTestAugmented, trainLabelsFile, testLabelsFile, binaryProtoFile = getPathsForConfig(conf)
+    os.chdir("/usr/local/caffe")
+    
+    if prepareImages:
+        
+        if os.path.exists(folderImagesTrain):
+            shutil.rmtree(folderImagesTrain)
+        os.makedirs(folderImagesTrain)
+        if os.path.exists(folderImagesTest):
+            shutil.rmtree(folderImagesTest)
+        os.makedirs(folderImagesTest)
+        
+        try:
+            os.remove(trainLabelsFile)
+        except OSError:
+            pass
+        
+        try:
+            os.remove(testLabelsFile)
+        except OSError:
+            pass     
+             
+        splitDatasetToTrainingAndTestDataset(sourceImagesFolderTrain, folderImagesTrain, folderImagesTest, trainLabelsFile, testLabelsFile) 
+        
+        print "Images split."
+        
+    lblTrainLmdb = "diabetic_retinopathy_train_lmdb"
+    lblTestLmdb = "diabetic_retinopathy_test_lmdb"
+    
+          
+    cmdTrainLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
+        --resize_height=256 \
+        --resize_width=256 \
+        --shuffle \
+        %s/ \
+        %s \
+        %s/%s" % (folderImagesTrain, trainLabelsFile, selectedFolder, lblTrainLmdb)
+        
+    cmdValLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
+        --resize_height=256 \
+        --resize_width=256 \
+        --shuffle \
+        %s/ \
+        %s \
+        %s/%s" % (folderImagesTest, testLabelsFile, selectedFolder, lblTestLmdb)
+        
+    cmdCreateImagenetMean = "./build/tools/compute_image_mean %s/%s \
+  %s" % (selectedFolder, lblTrainLmdb, binaryProtoFile)
+        
+    print "Creating train lmdb..."
+    return_code = subprocess.call(cmdTrainLmdb, shell=True)
+    
+    print "Creating val lmdb..."        
+    
+    return_code = subprocess.call(cmdValLmdb, shell=True)
+    
+    print "Done."
+    
+    print "Creating binary proto file..."  
+    return_code = subprocess.call(cmdCreateImagenetMean, shell=True)
+    
+    notification = "finished processing images for %s" % conf
+    
+    print notification
     
 if __name__ == "__main__":
     augmentTestSet = False
-    #categories = [0,1,2,3]
-    categories = [None]
     configurations = ['run-contrast-1']
     for conf in configurations:
-        for category in categories:
-            selectedFolder, sourceImagesFolderTrain, sourceImagesFolderTest, folderImagesTrain, folderImagesTest, FolderImagesTestAugmented, trainLabelsFile, testLabelsFile, binaryProtoFile = getPathsForConfig(conf)
-            if not category is None:
-                folderImagesTrain = addCategoryTag(folderImagesTrain, category)
-                folderImagesTest = addCategoryTag(folderImagesTest, category)
-                trainLabelsFile = addCategoryTag(trainLabelsFile, category)
-                testLabelsFile = addCategoryTag(testLabelsFile, category)
-                binaryProtoFile = addCategoryTag(binaryProtoFile, category)
-            
-            os.chdir("/usr/local/caffe")
-            
-            
-            if PREPARE_IMAGES:
-                
-                if os.path.exists(folderImagesTrain):
-                    shutil.rmtree(folderImagesTrain)
-                os.makedirs(folderImagesTrain)
-                if os.path.exists(folderImagesTest):
-                    shutil.rmtree(folderImagesTest)
-                os.makedirs(folderImagesTest)
-                
-                
-                try:
-                    os.remove(trainLabelsFile)
-                except OSError:
-                    pass
-                
-                try:
-                    os.remove(testLabelsFile)
-                except OSError:
-                    pass     
-                     
-                splitDatasetToTrainingAndTestDataset(sourceImagesFolderTrain, folderImagesTrain, folderImagesTest, trainLabelsFile, testLabelsFile, ordinalCategory=category) 
-                
-                print "Images split."
-                
-            if category is None:
-                lblTrainLmdb = "diabetic_retinopathy_train_lmdb"
-                lblTestLmdb = "diabetic_retinopathy_test_lmdb"
-            else:
-                lblTrainLmdb = "diabetic_retinopathy_train_category_%d_lmdb" % category
-                lblTestLmdb = "diabetic_retinopathy_test__category_%d_lmdb" % category
-            
-            
-                  
-            cmdTrainLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
-                --resize_height=256 \
-                --resize_width=256 \
-                --shuffle \
-                %s/ \
-                %s \
-                %s/%s" % (folderImagesTrain, trainLabelsFile, selectedFolder, lblTrainLmdb)
-                
-            cmdValLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
-                --resize_height=256 \
-                --resize_width=256 \
-                --shuffle \
-                %s/ \
-                %s \
-                %s/%s" % (folderImagesTest, testLabelsFile, selectedFolder, lblTestLmdb)
-                
-            cmdCreateImagenetMean = "./build/tools/compute_image_mean %s/%s \
-          %s" % (selectedFolder, lblTrainLmdb, binaryProtoFile)
-                
-            print "Creating train lmdb..."
-            return_code = subprocess.call(cmdTrainLmdb, shell=True)
-            
-            print "Creating val lmdb..."        
-            
-            return_code = subprocess.call(cmdValLmdb, shell=True)
-            
-            print "Done."
-            
-            print "Creating binary proto file..."  
-            return_code = subprocess.call(cmdCreateImagenetMean, shell=True)
-            
-            notification = "finished processing images for %s" % conf
-            if not category is None:
-                notification += " (category %d)" % category
-            
-            print notification
+        prepareDatasetsForSelectedConfiguration(conf)
+        
 
 
 
