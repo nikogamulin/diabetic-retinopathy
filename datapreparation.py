@@ -285,7 +285,6 @@ def prepareDatasetsForSelectedConfiguration(conf, prepareImages=False):
     print notification
     
 if __name__ == "__main__":
-    augmentTestSet = False
     configurations = ['run-contrast-1']
     for conf in configurations:
         prepareDatasetsForSelectedConfiguration(conf)

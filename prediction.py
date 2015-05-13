@@ -150,20 +150,7 @@ def getEnsemble(probabilitiesDictionariesList, sampleSubmissionFile, resultsFile
         
     
 if __name__ == "__main__":
-    '''
-    f1 = probabilitiesPickleFile = DATA_PATH + '/submission_probabilities_run-normal_lenet_small_kernels_size_3.p'
-    f2 = probabilitiesPickleFile = DATA_PATH + '/submission_probabilities_run-normal_oxford_v1.p'
-    f3 = probabilitiesPickleFile = DATA_PATH + '/submission_probabilities_run-normal_lenet_small_kernels.p'
-    probs1 = pickle.load(open(f1, "rb"))
-    #probs2 = pickle.load(open(f2, "rb"))
-    probs3 = pickle.load(open(f3, "rb"))
-    probsList = [probs1, probs3]
-    resultsFile = DATA_PATH + '/submission_ensembleTestBest2.csv'
-    getEnsemble(probsList, SAMPLE_SUBMISSION_FILE, resultsFile)
-    exit()
-    '''
-    
-    
+        
     makePredictionsForSubmission = True
     configs = ['run-normal']
     #modelDefinitions = ['/home/niko/caffe-models/diabetic-retinopathy-detection/oxford_v1.prototxt']
