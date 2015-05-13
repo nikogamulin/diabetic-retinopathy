@@ -61,7 +61,7 @@ if __name__ == '__main__':
     #train_dict_list, train_dict_names, test_dict_list, test_dict_names = logparser.parse_log("/home/niko/caffe-models/diabetic-retinopathy-detection/cascading/log/stage_0_1234/small_kernels.txt")
     #train_dict_list, train_dict_names, test_dict_list, test_dict_names = logparser.parse_log("/home/niko/caffe-models/diabetic-retinopathy-detection/log/log_small_kernels_size_3.txt")
     #train_dict_list, train_dict_names, test_dict_list, test_dict_names = logparser.parse_log("/home/niko/caffe-models/diabetic-retinopathy-detection/log/log_small_kernels_v3.txt")
-    train_dict_list, train_dict_names, test_dict_list, test_dict_names = logparser.parse_log("/home/niko/caffe-models/diabetic-retinopathy-detection/log/deep_v1.txt")
+    train_dict_list, train_dict_names, test_dict_list, test_dict_names = logparser.parse_log("/home/niko/caffe-models/diabetic-retinopathy-detection/log/deep_v3.txt")
     trainSeconds = [i['Seconds'] for i in train_dict_list]
     trainLearningRate = [i['LearningRate'] for i in train_dict_list]
     trainNumIters = [i['NumIters'] for i in train_dict_list]

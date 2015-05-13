@@ -103,6 +103,26 @@ def storeItem(itemValue, destFile):
     with open(destFile, 'a+') as f:
         f.write(itemValue + '\n')
         
+def storeItemOrdinal(itemValue, destFile, categoriesCount):
+    filename, category = itemValue.split(" ")
+    outputVector = [0] * len(categoriesCount)
+    for i in range(categoriesCount):
+        if i <= category:
+            outputVector[i] = 1
+        else:
+            outputVector[i] = -1
+    strOutputVector = " ".join(outputVector)
+    itemValueOrdinal ="%s %s" % (filename, strOutputVector)
+    with open(destFile, 'a+') as f:
+        f.write(itemValueOrdinal + '\n')
+        
+def recodeCategoricalToOrdinal(fileSource, fileDestination, categoriesCount):
+    itemscount,items = getItemsFromFile(filename=fileSource,excludeHeader=False)
+    for item in items:
+        storeItemOrdinal(item, fileDestination, categoriesCount)
+        
+    
+        
 def getDatasetStats(filename = TRAIN_LABELS_FILE_SOURCE, showHistogram = False):
     classes = []
     itemscount,items = getItemsFromFile(filename=filename)
