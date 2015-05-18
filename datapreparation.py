@@ -285,7 +285,12 @@ def prepareDatasetsForSelectedConfiguration(conf, prepareImages=False):
     print notification
     
 if __name__ == "__main__":
-    configurations = ['run-contrast-1']
+    
+    labelsFolder = '/home/niko/datasets/DiabeticRetinopathyDetection/processed/run-normal'
+    #recodeCategoricalToOrdinal(labelsFolder + "/training.txt", labelsFolder + "/training_ordinal.txt", 5)
+    #recodeCategoricalToOrdinal(labelsFolder + "/test.txt", labelsFolder + "/test_ordinal.txt", 5)
+    exit()
+    configurations = ['run-normal']
     for conf in configurations:
         prepareDatasetsForSelectedConfiguration(conf)
         
