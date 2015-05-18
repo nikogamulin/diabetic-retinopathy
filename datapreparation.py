@@ -218,7 +218,7 @@ def splitDatasetToTrainingAndTestDataset(SOURCE_IMAGES_FOLDER_TRAIN, folderImage
     elapsed_time = time.time() - start_time
     print "Processed %d of %d items. Execution time: %.3f s" % (imagesProcessedCount, imagesCount, elapsed_time) 
 
-def prepareDatasetsForSelectedConfiguration(conf, prepareImages=False):
+def prepareDatasetsForSelectedConfiguration(conf, prepareImages=False, ordinalEncoding=True):
     selectedFolder, sourceImagesFolderTrain, sourceImagesFolderTest, folderImagesTrain, folderImagesTest, FolderImagesTestAugmented, trainLabelsFile, testLabelsFile, binaryProtoFile = getPathsForConfig(conf)
     os.chdir("/usr/local/caffe")
     
@@ -245,8 +245,22 @@ def prepareDatasetsForSelectedConfiguration(conf, prepareImages=False):
         
         print "Images split."
         
+        
     lblTrainLmdb = "diabetic_retinopathy_train_lmdb"
     lblTestLmdb = "diabetic_retinopathy_test_lmdb"
+    
+    if ordinalEncoding:
+        trainLabelsFileRecoded = trainLabelsFile.replace(".", "_ordinal.")
+        testLabelsFileRecoded = testLabelsFile.replace(".", "_ordinal.")
+        if not os.path.isfile(trainLabelsFileRecoded):
+            recodeCategoricalToOrdinal(trainLabelsFile, trainLabelsFileRecoded, 5)
+        if not os.path.isfile(testLabelsFileRecoded):
+            recodeCategoricalToOrdinal(testLabelsFile, testLabelsFileRecoded, 5)
+        testLabelsFile = testLabelsFileRecoded
+        trainLabelsFile = trainLabelsFileRecoded
+        
+        lblTrainLmdb = "diabetic_retinopathy_train_ordinal.leveldb"
+        lblTestLmdb = "diabetic_retinopathy_test_ordinal.leveldb"
     
           
     cmdTrainLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
