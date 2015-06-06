@@ -7,8 +7,8 @@ Created on 6. jun. 2015
 import common
 
 exampleLine = "run-normal_12_left.jpeg 12"
-imageListSource = "/media/niko/data/data/DiabeticRetinopathyDetection/labelsTest.txt"
-imageListDestination = "/media/niko/data/data/DiabeticRetinopathyDetection/labelsTest_run-normal.txt"
+imageListSource = "/media/niko/data/data/DiabeticRetinopathy/labelsTest.txt"
+imageListDestination = "/media/niko/data/data/DiabeticRetinopathy/labelsTest_run-normal.txt"
 imagesToInclude = ["run-normal"]
 itemsDestination = []
 imagesCount, itemsSource = common.getItemsFromFile(filename = imageListSource, excludeHeader = False)
