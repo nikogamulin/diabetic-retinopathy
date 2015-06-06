@@ -106,11 +106,16 @@ def predictProbabilities(modelName, tag, sampleSubmissionFile, snapshot=100):
     timeTotal = "%d:%02d:%02d" % (h, m, s)
     print "Prediction procedure for model %s finished. Probabilities stored to %s. Execution time: %s" % (modelDefinitions[i], probabilitiesPickleFile, timeTotal)
 
-def generateSubmissionFileFromProbabilitiesDict(probabilitiesDict, resultsFile, sampleSubmissionFile=None):
+def generateSubmissionFileFromProbabilitiesDict(probabilitiesDict, resultsFile, sampleSubmissionFile=None, ordinal=False):
     storeItem("image,level", resultsFile)
     if sampleSubmissionFile is None:
         for k,v in probabilitiesDict.iteritems():
             predictedClass = v.argmax()
+            maxProb = max(v)
+            if ordinal:
+                if maxProb <= 0.5:
+                    predictedClass = 0
+                    
             row = "%s,%d" % (k, predictedClass)
             storeItem(row, resultsFile)
     else:
@@ -120,6 +125,10 @@ def generateSubmissionFileFromProbabilitiesDict(probabilitiesDict, resultsFile, 
             itemLabel, itemClass = item.replace(",", " ").split()
             probabilities = probabilitiesDict[itemLabel]
             predictedClass = probabilities.argmax()
+            maxProb = max(probabilities)
+            if ordinal:
+                if maxProb <= 0.5:
+                    predictedClass = 0
             row = "%s,%d" % (itemLabel, predictedClass)
             storeItem(row, resultsFile)
         
@@ -155,13 +164,12 @@ if __name__ == "__main__":
     configs = ['run-normal']
     #modelDefinitions = ['/home/niko/caffe-models/diabetic-retinopathy-detection/oxford_v1.prototxt']
     #pretrainedModels = ['/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/run-normal/small_kernels/oxford_v1_iter_450000.caffemodel']
-    modelDefinitions = ['/home/niko/caffe-models/diabetic-retinopathy-detection/deep_v3.prototxt']
-    pretrainedModels = ['/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/run-normal/small_kernels/deep_v3_iter_310000.caffemodel']
+    modelDefinitions = ['/home/niko/caffe-models/diabetic-retinopathy-detection/deep_v1_hdf5.prototxt']
+    pretrainedModels = ['/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/run-normal/small_kernels/deep_v1_hdf5_iter_200000.caffemodel']
     for conf in configs:
-        selectedFolder, sourceImagesFolderTrain, sourceImagesFolderTest, dataImagesTrain, dataImagesTest, dataImagesTestAugmented, trainLabelsFile, testLabelsFile, binaryProtoFile = getPathsForConfig(conf)
+        selectedFolder, sourceImagesFolderTrain, sourceImagesFolderTest, dataImagesTrain, dataImagesTest, trainLabelsFile, testLabelsFile, binaryProtoFile = getPathsForConfig(conf)
         for i in range(len(modelDefinitions)):
     
-            #mdl = initPredictionModel(binaryProtoFile)
             mdl = initPredictionModel(binaryProtoFile, modelDefinitions[i], pretrainedModels[i])
             k = modelDefinitions[i].rfind("/")
             mdlName = modelDefinitions[i][k+1:-9]
@@ -169,10 +177,10 @@ if __name__ == "__main__":
             probabilitiesFile = DATA_PATH + '/probabilities_' + conf + "_" + mdlName + '.csv'
             probabilitiesPickleFile = DATA_PATH + '/probabilities_' + conf + "_" + mdlName + '.p'
             
-            predictProbabilities(mdlName, conf, SAMPLE_SUBMISSION_FILE)
+            #predictProbabilities(mdlName, conf, SAMPLE_SUBMISSION_FILE)
             probabilitiesPickleFile = DATA_PATH + '/submission_probabilities_' + conf + "_" + mdlName + '.p'
             probabilitiesDict = pickle.load(open(probabilitiesPickleFile, "rb"))
-            generateSubmissionFileFromProbabilitiesDict(probabilitiesDict, resultsFile, SAMPLE_SUBMISSION_FILE)
+            generateSubmissionFileFromProbabilitiesDict(probabilitiesDict, resultsFile, SAMPLE_SUBMISSION_FILE, ordinal=True)
             exit
             
             

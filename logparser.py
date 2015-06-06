@@ -23,7 +23,7 @@ def get_line_type(line):
     return line_type
 
 
-def parse_log(path_to_log):
+def parse_log(path_to_log, selectedOutput = None):
     """Parse log file
     Returns (train_dict_list, train_dict_names, test_dict_list, test_dict_names)
     train_dict_list and test_dict_list are lists of dicts that define the table
@@ -33,9 +33,14 @@ def parse_log(path_to_log):
     """
 
     re_iteration = re.compile('Iteration (\d+)')
-    re_accuracy = re.compile('output #\d+: accuracy = ([\.\d]+)')
-    re_train_loss = re.compile('Iteration \d+, loss = ([\.\d]+)')
-    re_output_loss = re.compile('output #\d+: loss = ([\.\d]+)')
+    if selectedOutput is None:
+        re_accuracy = re.compile('output #\d+: accuracy = ([\.\d]+)')
+        re_train_loss = re.compile('Iteration \d+, loss = ([\.\d]+)')
+        re_output_loss = re.compile('output #\d+: loss = ([\.\d]+)')
+    else:
+        re_accuracy = re.compile('output #\d+: accuracy%d = ([\.\d]+)' % selectedOutput)
+        re_train_loss = re.compile('Iteration \d+, loss = ([\.\d]+)')
+        re_output_loss = re.compile('output #\d+: loss%d = ([\.\d]+)' % selectedOutput)
     re_lr = re.compile('lr = ([\.\d]+)')
 
     # Pick out lines of interest
@@ -143,7 +148,7 @@ def parse_args():
 def main():
     args = parse_args()
     train_dict_list, train_dict_names, test_dict_list, test_dict_names = \
-        parse_log(args.logfile_path)
+        parse_log(args.logfile_path,1)
     save_csv_files(args.logfile_path, args.output_dir, train_dict_list,
                    train_dict_names, test_dict_list, test_dict_names)
 

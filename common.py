@@ -11,16 +11,11 @@ import glob
 import random
 import shutil
 import time
-
 import numpy as np
 import matplotlib.pyplot as plt
-
 import subprocess
-
 import re
-
 import os
-
 import sys
 
 caffe_root = '/usr/local/caffe/'  # this file is expected to be in {caffe_root}/examples
@@ -29,59 +24,43 @@ sys.path.insert(0, caffe_root + 'python')
 
 import caffe
 
-CONFIG = 'run-contrast-1'
-
 DATA_PATH = "/home/niko/datasets/DiabeticRetinopathyDetection"
 MODEL_PATH = '/home/niko/caffe-models/diabetic-retinopathy-detection'
 VALIDATION_PATH = '/home/niko/caffe-models/diabetic-retinopathy-detection/validation'
 VALIDATION_FILE = VALIDATION_PATH + '/test.txt'
 
-'''
-SELECTED_FOLDER = DATA_PATH + "/processed/" + CONFIG
-
-SOURCE_IMAGES_FOLDER_TRAIN = SELECTED_FOLDER + '/train'
-SOURCE_IMAGES_FOLDER_TEST = SELECTED_FOLDER + '/test'
-
-DATA_IMAGES_TRAIN = SELECTED_FOLDER + '/train_train'
-DATA_IMAGES_TEST = SELECTED_FOLDER + '/train_test'
-
-DATA_IMAGES_TEST_AUGMENTED = SELECTED_FOLDER + '/train_test_augmented'
-
-TRAIN_LABELS_FILE = SELECTED_FOLDER + "/training.txt"
-TEST_LABELS_FILE = SELECTED_FOLDER + "/test.txt"
-'''
-
 LABELS = ['No DR', 'Mild', 'Moderate', 'Severe', 'Proliferative DR']
 
 MODEL_FILE = '/home/niko/caffe-models/diabetic-retinopathy-detection/lenet.prototxt'
-#MODEL_FILE = '/home/niko/caffe-models/diabetic-retinopathy-detection/lenet_7_7_dropout.prototxt'
-#PRETRAINED = '/home/niko/caffe-models/diabetic-retinopathy-detection/finetune_diabetic_retinopathy_256_iter_60000.caffemodel'
+
 PRETRAINED = '/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/run-normal/lenet_normal_iter_20000.caffemodel'
-#PRETRAINED = '/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/run_normal_7_7/lenet_normal_iter_20000.caffemodel'
-#PRETRAINED = '/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/run_normal_7_7_dropout/lenet_normal_iter_50000.caffemodel'
+
 IMAGE_FILES = ['/home/niko/datasets/DiabeticRetinopathyDetection/processed/run-normal/test/1_left.jpeg', '/home/niko/datasets/DiabeticRetinopathyDetection/processed/run-normal/test/9_left.jpeg']
 
-#BINARY_PROTO_FILE = '/home/niko/datasets/DiabeticRetinopathyDetection/augmented/diabetic_retinopathy_mean_256_256.binaryproto'
-#BINARY_PROTO_FILE = '/home/niko/datasets/DiabeticRetinopathyDetection/processed/run-normal/diabetic_retinopathy_mean.binaryproto'
 
 TRAIN_LABELS_FILE_SOURCE = "%s/trainLabels.csv" % DATA_PATH
 TRAIN_AUGMENTED_LABELS_FILE_SOURCE = "%s/trainLabelsAugmented.csv" % DATA_PATH
 SAMPLE_SUBMISSION_FILE = "%s/sampleSubmission.csv" % DATA_PATH
 
-def getPathsForConfig(conf):
+def getPathsForConfig(conf, destinationFolder=None):
 
-    SELECTED_FOLDER = DATA_PATH + "/processed/" + conf    
-    SOURCE_IMAGES_FOLDER_TRAIN = SELECTED_FOLDER + '/train'
-    SOURCE_IMAGES_FOLDER_TEST = SELECTED_FOLDER + '/test'
-    DATA_IMAGES_TRAIN = SELECTED_FOLDER + '/train_train'
-    DATA_IMAGES_TEST = SELECTED_FOLDER + '/train_test' 
-    DATA_IMAGES_TEST_AUGMENTED = SELECTED_FOLDER + '/train_test_augmented'
-    TRAIN_LABELS_FILE = SELECTED_FOLDER + "/training.txt"
-    TEST_LABELS_FILE = SELECTED_FOLDER + "/test.txt"
-    #BINARY_PROTO_FILE = '/home/niko/datasets/DiabeticRetinopathyDetection/processed/run-normal/diabetic_retinopathy_mean.binaryproto'
-    BINARY_PROTO_FILE = SELECTED_FOLDER + '/diabetic_retinopathy_mean.binaryproto'
-    
-    return [SELECTED_FOLDER, SOURCE_IMAGES_FOLDER_TRAIN, SOURCE_IMAGES_FOLDER_TEST, DATA_IMAGES_TRAIN, DATA_IMAGES_TEST, DATA_IMAGES_TEST_AUGMENTED, TRAIN_LABELS_FILE, TEST_LABELS_FILE, BINARY_PROTO_FILE]
+    sourceFolder = DATA_PATH + "/processed/" + conf    
+    sourceImagesFolderTrain = sourceFolder + '/train'
+    sourceImagesFolderTest = sourceFolder + '/test'
+    if destinationFolder is None:
+        destinationFolderImagesTrain = sourceFolder + '/train_train'
+        destinationFolderImagesTest = sourceFolder + '/train_test' 
+        trainLabelsFile = sourceFolder + "/labelsTrain.txt"
+        testLabelsFile = sourceFolder + "/labelsTest.txt"
+        binaryProtoFile = sourceFolder + '/diabetic_retinopathy_mean.binaryproto'
+        destinationFolder = sourceFolder
+    else:
+        destinationFolderImagesTrain = destinationFolder + '/train'
+        destinationFolderImagesTest = destinationFolder + '/test' 
+        trainLabelsFile = destinationFolder + "/labelsTrain.txt"
+        testLabelsFile = destinationFolder + "/labelsTest.txt"
+        binaryProtoFile = destinationFolder + '/diabetic_retinopathy_mean.binaryproto'
+    return [destinationFolder, sourceImagesFolderTrain, sourceImagesFolderTest, destinationFolderImagesTrain, destinationFolderImagesTest, trainLabelsFile, testLabelsFile, binaryProtoFile]
 
 def getItemsFromFile(filename = TRAIN_LABELS_FILE_SOURCE, excludeHeader = True):
     imagesList = getTextEntriesFromFile(filename)
@@ -105,9 +84,10 @@ def storeItem(itemValue, destFile):
         
 def storeItemOrdinal(itemValue, destFile, categoriesCount):
     filename, category = itemValue.split(" ")
-    outputVector = [0] * categoriesCount
-    for i in range(categoriesCount):
-        if i <= int(category):
+    outputVectorLength = categoriesCount
+    outputVector = [0] * outputVectorLength
+    for i in range(outputVectorLength):
+        if i < int(category):
             outputVector[i] = 1
         else:
             outputVector[i] = -1

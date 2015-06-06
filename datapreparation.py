@@ -167,16 +167,18 @@ def getAugmentedImages(img, name, rotationsCount, doShearAugmentations=False, do
             augmentedImagesLabels.append(imName)
     return [augmentedImages, augmentedImagesLabels]
 
-def saveAugmentedImages(images, folder, labelsFile, label):
+def saveAugmentedImages(images, folder, labelsFile, label, configTag=None):
     for i in range(len(images[0])):
         imName = images[1][i]
+        if not configTag is None:
+            imName = configTag + '_' + imName
         img = images[0][i]
         itemToStore = "%s.jpeg %d" % (imName, label)
         storeItem(itemToStore, labelsFile)
         fname = "%s/%s.jpeg" % (folder, imName)
         io.imsave(fname, img)      
             
-def splitDatasetToTrainingAndTestDataset(SOURCE_IMAGES_FOLDER_TRAIN, folderImagesTrain, folderImagesTest, trainLabelsFile, testLabelsFile):
+def splitDatasetToTrainingAndTestDataset(configTag, sourceImagesFolderTrain, folderImagesTrain, folderImagesTest, trainLabelsFile, testLabelsFile):
     duplicatesCount = getNumberOfDuplicates()
     imagesCount, items = getItemsFromFile(filename = TRAIN_LABELS_FILE_SOURCE, excludeHeader = True)
     itemsDict = {}
@@ -200,12 +202,13 @@ def splitDatasetToTrainingAndTestDataset(SOURCE_IMAGES_FOLDER_TRAIN, folderImage
                 if destination is None:
                     destination = determineTargetLabelsAndDataset(trainLabelsFile, testLabelsFile, folderImagesTrain, folderImagesTest)
                 itemFilename = "%s.jpeg" % imageName
-                itemSourceFilename = "%s/%s" %(SOURCE_IMAGES_FOLDER_TRAIN, itemFilename)
+                itemSourceFilename = "%s/%s" %(sourceImagesFolderTrain, itemFilename)
                 normalizedImage = io.imread(itemSourceFilename)
                 if destination[1] == folderImagesTrain:
                     images = getAugmentedImages(normalizedImage, imageName, duplicatesCount[eyeLabel], doShearAugmentations=True, doPcaAugmentations=True)
-                    saveAugmentedImages(images, folderImagesTrain, destination[0], eyeLabel)
+                    saveAugmentedImages(images, folderImagesTrain, destination[0], eyeLabel, configTag)
                 else:
+                    imageName = configTag + '_' + imageName
                     itemToStore = "%s.jpeg %d" % (imageName, eyeLabel)
                     storeItem(itemToStore, destination[0])
                     fname = "%s/%s.jpeg" % (folderImagesTest, imageName)
@@ -218,92 +221,103 @@ def splitDatasetToTrainingAndTestDataset(SOURCE_IMAGES_FOLDER_TRAIN, folderImage
     elapsed_time = time.time() - start_time
     print "Processed %d of %d items. Execution time: %.3f s" % (imagesProcessedCount, imagesCount, elapsed_time) 
 
-def prepareDatasetsForSelectedConfiguration(conf, prepareImages=False, ordinalEncoding=True):
-    selectedFolder, sourceImagesFolderTrain, sourceImagesFolderTest, folderImagesTrain, folderImagesTest, FolderImagesTestAugmented, trainLabelsFile, testLabelsFile, binaryProtoFile = getPathsForConfig(conf)
-    os.chdir("/usr/local/caffe")
-    
-    if prepareImages:
+def prepareDatasetsForSelectedConfiguration(configurations, prepareImages=False, clearExisting=False, create_lmdb=False, ordinalEncoding=True, commonDestination=None):
+    for config in configurations:
+        c = getPathsForConfig(config, commonDestination)
+        destinationFolder, sourceImagesFolderTrain, sourceImagesFolderTest, folderImagesTrain, folderImagesTest, trainLabelsFile, testLabelsFile, binaryProtoFile = c
         
-        if os.path.exists(folderImagesTrain):
-            shutil.rmtree(folderImagesTrain)
-        os.makedirs(folderImagesTrain)
-        if os.path.exists(folderImagesTest):
-            shutil.rmtree(folderImagesTest)
-        os.makedirs(folderImagesTest)
+        os.chdir("/usr/local/caffe")
         
-        try:
-            os.remove(trainLabelsFile)
-        except OSError:
-            pass
+        if clearExisting:
+            
+            if os.path.exists(folderImagesTrain):
+                shutil.rmtree(folderImagesTrain)
+            os.makedirs(folderImagesTrain)
+            if os.path.exists(folderImagesTest):
+                shutil.rmtree(folderImagesTest)
+            os.makedirs(folderImagesTest)
+            
+            try:
+                os.remove(trainLabelsFile)
+            except OSError:
+                pass
+            
+            try:
+                os.remove(testLabelsFile)
+            except OSError:
+                pass     
+        if prepareImages: 
+            
+            if not os.path.exists(folderImagesTrain):
+                os.makedirs(folderImagesTrain)
+            if not os.path.exists(folderImagesTest):
+                os.makedirs(folderImagesTest)
+                    
+            splitDatasetToTrainingAndTestDataset(config, sourceImagesFolderTrain, folderImagesTrain, folderImagesTest, trainLabelsFile, testLabelsFile) 
+            
+            print "Images split for configuration %s" % config
+            
+    if create_lmdb:
         
-        try:
-            os.remove(testLabelsFile)
-        except OSError:
-            pass     
-             
-        splitDatasetToTrainingAndTestDataset(sourceImagesFolderTrain, folderImagesTrain, folderImagesTest, trainLabelsFile, testLabelsFile) 
+        lblTrainLmdb = "diabetic_retinopathy_train_lmdb"
+        lblTestLmdb = "diabetic_retinopathy_test_lmdb"
         
-        print "Images split."
+        if ordinalEncoding:
+            trainLabelsFileRecoded = trainLabelsFile.replace(".", "_ordinal.")
+            testLabelsFileRecoded = testLabelsFile.replace(".", "_ordinal.")
+            if not os.path.isfile(trainLabelsFileRecoded):
+                recodeCategoricalToOrdinal(trainLabelsFile, trainLabelsFileRecoded, 5)
+            if not os.path.isfile(testLabelsFileRecoded):
+                recodeCategoricalToOrdinal(testLabelsFile, testLabelsFileRecoded, 5)
+            testLabelsFile = testLabelsFileRecoded
+            trainLabelsFile = trainLabelsFileRecoded
+            
+            lblTrainLmdb = "diabetic_retinopathy_train_ordinal.leveldb"
+            lblTestLmdb = "diabetic_retinopathy_test_ordinal.leveldb"
         
+              
+        cmdTrainLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
+            --resize_height=256 \
+            --resize_width=256 \
+            --shuffle \
+            %s/ \
+            %s \
+            %s/%s" % (folderImagesTrain, trainLabelsFile, destinationFolder, lblTrainLmdb)
+            
+        cmdValLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
+            --resize_height=256 \
+            --resize_width=256 \
+            --shuffle \
+            %s/ \
+            %s \
+            %s/%s" % (folderImagesTest, testLabelsFile, destinationFolder, lblTestLmdb)
+            
+        cmdCreateImagenetMean = "./build/tools/compute_image_mean %s/%s \
+      %s" % (destinationFolder, lblTrainLmdb, binaryProtoFile)
+            
+        print "Creating train lmdb..."
+        return_code = subprocess.call(cmdTrainLmdb, shell=True)
         
-    lblTrainLmdb = "diabetic_retinopathy_train_lmdb"
-    lblTestLmdb = "diabetic_retinopathy_test_lmdb"
-    
-    if ordinalEncoding:
-        trainLabelsFileRecoded = trainLabelsFile.replace(".", "_ordinal.")
-        testLabelsFileRecoded = testLabelsFile.replace(".", "_ordinal.")
-        if not os.path.isfile(trainLabelsFileRecoded):
-            recodeCategoricalToOrdinal(trainLabelsFile, trainLabelsFileRecoded, 5)
-        if not os.path.isfile(testLabelsFileRecoded):
-            recodeCategoricalToOrdinal(testLabelsFile, testLabelsFileRecoded, 5)
-        testLabelsFile = testLabelsFileRecoded
-        trainLabelsFile = trainLabelsFileRecoded
+        print "Creating val lmdb..."        
         
-        lblTrainLmdb = "diabetic_retinopathy_train_ordinal.leveldb"
-        lblTestLmdb = "diabetic_retinopathy_test_ordinal.leveldb"
-    
-          
-    cmdTrainLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
-        --resize_height=256 \
-        --resize_width=256 \
-        --shuffle \
-        %s/ \
-        %s \
-        %s/%s" % (folderImagesTrain, trainLabelsFile, selectedFolder, lblTrainLmdb)
+        return_code = subprocess.call(cmdValLmdb, shell=True)
         
-    cmdValLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
-        --resize_height=256 \
-        --resize_width=256 \
-        --shuffle \
-        %s/ \
-        %s \
-        %s/%s" % (folderImagesTest, testLabelsFile, selectedFolder, lblTestLmdb)
+        print "Done."
         
-    cmdCreateImagenetMean = "./build/tools/compute_image_mean %s/%s \
-  %s" % (selectedFolder, lblTrainLmdb, binaryProtoFile)
+        print "Creating binary proto file..."  
+        return_code = subprocess.call(cmdCreateImagenetMean, shell=True)
         
-    print "Creating train lmdb..."
-    return_code = subprocess.call(cmdTrainLmdb, shell=True)
-    
-    print "Creating val lmdb..."        
-    
-    return_code = subprocess.call(cmdValLmdb, shell=True)
-    
-    print "Done."
-    
-    print "Creating binary proto file..."  
-    return_code = subprocess.call(cmdCreateImagenetMean, shell=True)
-    
-    notification = "finished processing images for %s" % conf
+        notification = "finished processing images."
     
     print notification
     
 if __name__ == "__main__":
     
     labelsFolder = '/home/niko/datasets/DiabeticRetinopathyDetection/processed/run-normal'
-    configurations = ['run-normal']
-    for conf in configurations:
-        prepareDatasetsForSelectedConfiguration(conf)
+    destinationFolder = '/media/niko/data/data/DiabeticRetinopathy'
+    configurations = ['run-normal', 'run-contrast-1', 'run-contrast-2', 'run-hue-1', 'run-hue-2', 'run-sat-1', 'run-sat-2', 'run-stretch']
+    #(configurations, prepareImages=False, clearExisting=False, ordinalEncoding=True, commonDestination=None)
+    prepareDatasetsForSelectedConfiguration(configurations, prepareImages=False, ordinalEncoding=False, create_lmdb=True, commonDestination=destinationFolder)
         
 
 
