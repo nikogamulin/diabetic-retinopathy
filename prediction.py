@@ -177,7 +177,7 @@ if __name__ == "__main__":
             probabilitiesFile = DATA_PATH + '/probabilities_' + conf + "_" + mdlName + '.csv'
             probabilitiesPickleFile = DATA_PATH + '/probabilities_' + conf + "_" + mdlName + '.p'
             
-            #predictProbabilities(mdlName, conf, SAMPLE_SUBMISSION_FILE)
+            predictProbabilities(mdlName, conf, SAMPLE_SUBMISSION_FILE)
             probabilitiesPickleFile = DATA_PATH + '/submission_probabilities_' + conf + "_" + mdlName + '.p'
             probabilitiesDict = pickle.load(open(probabilitiesPickleFile, "rb"))
             generateSubmissionFileFromProbabilitiesDict(probabilitiesDict, resultsFile, SAMPLE_SUBMISSION_FILE, ordinal=True)
