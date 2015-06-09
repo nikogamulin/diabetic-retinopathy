@@ -9,6 +9,7 @@ from pylab import *
 import pandas as pd
 import matplotlib.pyplot as plt
 from pandas.tools.merge import merge
+from xlrd.formula import rownamerel
 
 def plotLoss(trainNumIters, trainingLoss, testNumIters, testLoss, trainLearningRate, testAccuracy):
     fig, ax1 = plt.subplots()
@@ -51,6 +52,16 @@ def plotMain(logFile, outputLabels = None):
         dfTraining = pd.DataFrame(train_dict_list, columns=['NumIters', 'LearningRate', 'TrainingLoss'])
         dfTest = pd.DataFrame(test_dict_list, columns=['Seconds', 'NumIters', 'TestLoss', 'TestAccuracy'])
         df = merge(dfTraining, dfTest, how='inner', on='NumIters')
+        df.plot(x='NumIters', y=['TrainingLoss', 'TestLoss'])
+        plt.show()
+        df.plot(x='NumIters', y=['TestAccuracy'])
+        plt.show()
+        rowMax = df['TestAccuracy'].argmax()
+        print df.loc[[rowMax]]
+        dfSubCondition = df['NumIters'] % 10000 == 0
+        dfSub = df[dfSubCondition]
+        rowMax = dfSub['TestAccuracy'].argmax()
+        print dfSub.loc[[rowMax]]
     else:
         df = pd.DataFrame()
         for lbl in outputLabels:
@@ -73,7 +84,8 @@ def plotMain(logFile, outputLabels = None):
         
 
 if __name__ == '__main__':
-    f="/home/niko/caffe-models/diabetic-retinopathy-detection/log/log_hdf5_v1.txt"
+    #f="/home/niko/caffe-models/diabetic-retinopathy-detection/log/log_hdf5_v1.txt"
+    f="C:\Users\gamulinn\Desktop\log_v1_extended_dataset_adapted_mean.txt"
     plotMain(f)
         
     

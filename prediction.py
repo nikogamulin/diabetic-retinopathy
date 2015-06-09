@@ -164,8 +164,8 @@ if __name__ == "__main__":
     configs = ['run-normal']
     #modelDefinitions = ['/home/niko/caffe-models/diabetic-retinopathy-detection/oxford_v1.prototxt']
     #pretrainedModels = ['/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/run-normal/small_kernels/oxford_v1_iter_450000.caffemodel']
-    modelDefinitions = ['/home/niko/caffe-models/diabetic-retinopathy-detection/deep_v1_hdf5.prototxt']
-    pretrainedModels = ['/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/run-normal/small_kernels/deep_v1_hdf5_iter_200000.caffemodel']
+    modelDefinitions = ['/home/niko/caffe-models/diabetic-retinopathy-detection/deep_v1.prototxt']
+    pretrainedModels = ['/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/run-normal/deep_v1_extended_dataset_iter_310000.caffemodel']
     for conf in configs:
         selectedFolder, sourceImagesFolderTrain, sourceImagesFolderTest, dataImagesTrain, dataImagesTest, trainLabelsFile, testLabelsFile, binaryProtoFile = getPathsForConfig(conf)
         for i in range(len(modelDefinitions)):
