@@ -139,11 +139,13 @@ def getFlippedImage(img):
         plt.show()
     return flipped_ud
 
-def determineTargetLabelsAndDataset(trainLabelsFile, testLabelsFile, folderImagesTrain, folderImagesTest):
+def determineTargetLabelsAndDataset(trainLabelsFile, testLabelsFile, folderImagesTrain, folderImagesTest, datasetRatio=None):
+    if datasetRatio is None:
+        datasetRatio = TRAINING_SET_SIZE
     labels = [trainLabelsFile, testLabelsFile]
     folders = [folderImagesTrain, folderImagesTest]
     rndVal = random.random()
-    if rndVal < TRAINING_SET_SIZE:
+    if rndVal < datasetRatio:
         return [labels[0], folders[0]]
     else:
         return [labels[1], folders[1]]
@@ -200,19 +202,23 @@ def splitDatasetToTrainingAndTestDataset(configTag, sourceImagesFolderTrain, fol
             if imageName in itemsDict:
                 eyeLabel = itemsDict[imageName]
                 if destination is None:
-                    destination = determineTargetLabelsAndDataset(trainLabelsFile, testLabelsFile, folderImagesTrain, folderImagesTest)
+                    if configTag == 'run-normal':
+                        destination = determineTargetLabelsAndDataset(trainLabelsFile, testLabelsFile, folderImagesTrain, folderImagesTest, datasetRatio=0.8)
+                    else:
+                        destination = determineTargetLabelsAndDataset(trainLabelsFile, testLabelsFile, folderImagesTrain, folderImagesTest, datasetRatio=0.5)
                 itemFilename = "%s.jpeg" % imageName
                 itemSourceFilename = "%s/%s" %(sourceImagesFolderTrain, itemFilename)
                 normalizedImage = io.imread(itemSourceFilename)
                 if destination[1] == folderImagesTrain:
-                    images = getAugmentedImages(normalizedImage, imageName, duplicatesCount[eyeLabel], doShearAugmentations=True, doPcaAugmentations=True)
+                    images = getAugmentedImages(normalizedImage, imageName, duplicatesCount[eyeLabel], doShearAugmentations=True, doPcaAugmentations=False)
                     saveAugmentedImages(images, folderImagesTrain, destination[0], eyeLabel, configTag)
                 else:
-                    imageName = configTag + '_' + imageName
-                    itemToStore = "%s.jpeg %d" % (imageName, eyeLabel)
-                    storeItem(itemToStore, destination[0])
-                    fname = "%s/%s.jpeg" % (folderImagesTest, imageName)
-                    io.imsave(fname, normalizedImage)
+                    if configTag == 'run-normal':
+                        imageName = configTag + '_' + imageName
+                        itemToStore = "%s.jpeg %d" % (imageName, eyeLabel)
+                        storeItem(itemToStore, destination[0])
+                        fname = "%s/%s.jpeg" % (folderImagesTest, imageName)
+                        io.imsave(fname, normalizedImage)
             imagesProcessedCount += 1            
             if imagesProcessedCount % 10000 == 0:
                 elapsed_time = time.time() - start_time
@@ -292,7 +298,8 @@ def prepareDatasetsForSelectedConfiguration(configurations, prepareImages=False,
             %s \
             %s/%s" % (folderImagesTest, testLabelsFile, destinationFolder, lblTestLmdb)
             
-        cmdCreateImagenetMean = "./build/tools/compute_image_mean %s/%s \
+        #./build/tools/compute_image_mean /media/niko/data/data/DiabeticRetinopathy/diabetic_retinopathy_train_lmdb /media/niko/data/data/DiabeticRetinopathy/diabetic_retinopathy_mean_train.binaryproto
+        cmdCreateImagenetMeanTrain = "./build/tools/compute_image_mean %s/%s \
       %s" % (destinationFolder, lblTrainLmdb, binaryProtoFile)
             
         print "Creating train lmdb..."
@@ -305,7 +312,7 @@ def prepareDatasetsForSelectedConfiguration(configurations, prepareImages=False,
         print "Done."
         
         print "Creating binary proto file..."  
-        return_code = subprocess.call(cmdCreateImagenetMean, shell=True)
+        return_code = subprocess.call(cmdCreateImagenetMeanTrain, shell=True)
         
         notification = "finished processing images."
     
