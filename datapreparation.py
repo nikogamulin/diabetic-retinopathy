@@ -324,7 +324,7 @@ if __name__ == "__main__":
     destinationFolder = '/media/niko/data/data/DiabeticRetinopathy'
     configurations = ['run-normal', 'run-contrast-1', 'run-contrast-2', 'run-hue-1', 'run-hue-2', 'run-sat-1', 'run-sat-2', 'run-stretch']
     #(configurations, prepareImages=False, clearExisting=False, ordinalEncoding=True, commonDestination=None)
-    prepareDatasetsForSelectedConfiguration(configurations, prepareImages=False, ordinalEncoding=False, create_lmdb=True, commonDestination=destinationFolder)
+    prepareDatasetsForSelectedConfiguration(configurations, prepareImages=True, ordinalEncoding=False, create_lmdb=True, commonDestination=destinationFolder)
         
 
 
