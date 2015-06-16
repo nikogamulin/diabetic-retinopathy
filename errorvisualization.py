@@ -85,7 +85,7 @@ def plotMain(logFile, outputLabels = None):
 
 if __name__ == '__main__':
     #f="/home/niko/caffe-models/diabetic-retinopathy-detection/log/log_hdf5_v1.txt"
-    f="C:\Users\gamulinn\Desktop\log_v1_extended_dataset_adapted_mean.txt"
+    f="C:\Users\gamulinn\Desktop\deep_v1_extended_dataset_adapted_mean.txt"
     plotMain(f)
         
     
