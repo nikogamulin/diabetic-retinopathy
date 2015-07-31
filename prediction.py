@@ -165,7 +165,7 @@ if __name__ == "__main__":
     #modelDefinitions = ['/home/niko/caffe-models/diabetic-retinopathy-detection/oxford_v1.prototxt']
     #pretrainedModels = ['/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/run-normal/small_kernels/oxford_v1_iter_450000.caffemodel']
     modelDefinitions = ['/home/niko/caffe-models/diabetic-retinopathy-detection/deep_v1.prototxt']
-    pretrainedModels = ['/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/deep_v1_extended_dataset_iter_260000.caffemodel']
+    pretrainedModels = ['/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/deep_v1_2_iter_400000.caffemodel']
     for conf in configs:
         selectedFolder, sourceImagesFolderTrain, sourceImagesFolderTest, dataImagesTrain, dataImagesTest, trainLabelsFile, testLabelsFile, binaryProtoFile = getPathsForConfig(conf)
         for i in range(len(modelDefinitions)):
@@ -173,6 +173,7 @@ if __name__ == "__main__":
             mdl = initPredictionModel(binaryProtoFile, modelDefinitions[i], pretrainedModels[i])
             k = modelDefinitions[i].rfind("/")
             mdlName = modelDefinitions[i][k+1:-9]
+            mdlName += "_2"
             resultsFile = DATA_PATH + '/submission_' + conf + "_" + mdlName + '.csv'
             probabilitiesFile = DATA_PATH + '/probabilities_' + conf + "_" + mdlName + '.csv'
             probabilitiesPickleFile = DATA_PATH + '/probabilities_' + conf + "_" + mdlName + '.p'

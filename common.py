@@ -42,24 +42,27 @@ TRAIN_LABELS_FILE_SOURCE = "%s/trainLabels.csv" % DATA_PATH
 TRAIN_AUGMENTED_LABELS_FILE_SOURCE = "%s/trainLabelsAugmented.csv" % DATA_PATH
 SAMPLE_SUBMISSION_FILE = "%s/sampleSubmission.csv" % DATA_PATH
 
-def getPathsForConfig(conf, destinationFolder=None):
-
+def getPathsForConfig(conf, destinationFolder=None, index=None):
+    if index is None:
+        index='';
+    else:
+        index = '_%d' % index
     sourceFolder = DATA_PATH + "/processed/" + conf    
     sourceImagesFolderTrain = sourceFolder + '/train'
     sourceImagesFolderTest = sourceFolder + '/test'
     if destinationFolder is None:
-        destinationFolderImagesTrain = sourceFolder + '/train_train'
-        destinationFolderImagesTest = sourceFolder + '/train_test' 
+        destinationFolderImagesTrain = sourceFolder + '/train_train' + index
+        destinationFolderImagesTest = sourceFolder + '/train_test' +index
         trainLabelsFile = sourceFolder + "/labelsTrain.txt"
         testLabelsFile = sourceFolder + "/labelsTest.txt"
         binaryProtoFile = sourceFolder + '/diabetic_retinopathy_mean.binaryproto'
         destinationFolder = sourceFolder
     else:
-        destinationFolderImagesTrain = destinationFolder + '/train'
-        destinationFolderImagesTest = destinationFolder + '/test' 
-        trainLabelsFile = destinationFolder + "/labelsTrain.txt"
-        testLabelsFile = destinationFolder + "/labelsTest.txt"
-        binaryProtoFile = destinationFolder + '/diabetic_retinopathy_mean.binaryproto'
+        destinationFolderImagesTrain = destinationFolder + '/train' + index
+        destinationFolderImagesTest = destinationFolder + '/test' +index
+        trainLabelsFile = destinationFolder + "/labelsTrain" + index + ".txt"
+        testLabelsFile = destinationFolder + "/labelsTest" + index + ".txt"
+        binaryProtoFile = destinationFolder + "/diabetic_retinopathy_mean" + index + ".binaryproto"
     return [destinationFolder, sourceImagesFolderTrain, sourceImagesFolderTest, destinationFolderImagesTrain, destinationFolderImagesTest, trainLabelsFile, testLabelsFile, binaryProtoFile]
 
 def getItemsFromFile(filename = TRAIN_LABELS_FILE_SOURCE, excludeHeader = True):

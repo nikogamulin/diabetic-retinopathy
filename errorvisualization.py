@@ -9,7 +9,6 @@ from pylab import *
 import pandas as pd
 import matplotlib.pyplot as plt
 from pandas.tools.merge import merge
-from xlrd.formula import rownamerel
 
 def plotLoss(trainNumIters, trainingLoss, testNumIters, testLoss, trainLearningRate, testAccuracy):
     fig, ax1 = plt.subplots()
@@ -84,8 +83,8 @@ def plotMain(logFile, outputLabels = None):
         
 
 if __name__ == '__main__':
-    #f="/home/niko/caffe-models/diabetic-retinopathy-detection/log/log_hdf5_v1.txt"
-    f="C:\Users\gamulinn\Desktop\deep_v1_extended_dataset_adapted_mean.txt"
+    f="/home/niko/caffe-models/diabetic-retinopathy-detection/log/deep_v1_1.txt"
+    #f="C:\Users\gamulinn\Desktop\deep_v1_extended_dataset_adapted_mean.txt"
     plotMain(f)
         
     

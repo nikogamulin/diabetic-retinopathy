@@ -228,9 +228,10 @@ def splitDatasetToTrainingAndTestDataset(configTag, sourceImagesFolderTrain, fol
     print "Processed %d of %d items. Execution time: %.3f s" % (imagesProcessedCount, imagesCount, elapsed_time) 
 
 def prepareDatasetsForSelectedConfiguration(configurations, prepareImages=False, clearExisting=False, create_lmdb=False, ordinalEncoding=True, commonDestination=None):
-    for config in configurations:
-        c = getPathsForConfig(config, commonDestination)
+    for index, config in enumerate(configurations):
+        c = getPathsForConfig(config, commonDestination, index)
         destinationFolder, sourceImagesFolderTrain, sourceImagesFolderTest, folderImagesTrain, folderImagesTest, trainLabelsFile, testLabelsFile, binaryProtoFile = c
+        print c
         
         os.chdir("/usr/local/caffe")
         
@@ -261,58 +262,58 @@ def prepareDatasetsForSelectedConfiguration(configurations, prepareImages=False,
                     
             splitDatasetToTrainingAndTestDataset(config, sourceImagesFolderTrain, folderImagesTrain, folderImagesTest, trainLabelsFile, testLabelsFile) 
             
-            print "Images split for configuration %s" % config
+            print "Images split for configuration %s, (%d)" % (config, index)
             
-    if create_lmdb:
-        
-        lblTrainLmdb = "diabetic_retinopathy_train_lmdb"
-        lblTestLmdb = "diabetic_retinopathy_test_lmdb"
-        
-        if ordinalEncoding:
-            trainLabelsFileRecoded = trainLabelsFile.replace(".", "_ordinal.")
-            testLabelsFileRecoded = testLabelsFile.replace(".", "_ordinal.")
-            if not os.path.isfile(trainLabelsFileRecoded):
-                recodeCategoricalToOrdinal(trainLabelsFile, trainLabelsFileRecoded, 5)
-            if not os.path.isfile(testLabelsFileRecoded):
-                recodeCategoricalToOrdinal(testLabelsFile, testLabelsFileRecoded, 5)
-            testLabelsFile = testLabelsFileRecoded
-            trainLabelsFile = trainLabelsFileRecoded
+        if create_lmdb:
             
-            lblTrainLmdb = "diabetic_retinopathy_train_ordinal.leveldb"
-            lblTestLmdb = "diabetic_retinopathy_test_ordinal.leveldb"
-        
-              
-        cmdTrainLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
-            --resize_height=256 \
-            --resize_width=256 \
-            --shuffle \
-            %s/ \
-            %s \
-            %s/%s" % (folderImagesTrain, trainLabelsFile, destinationFolder, lblTrainLmdb)
+            lblTrainLmdb = "diabetic_retinopathy_train_lmdb_%d" % index
+            lblTestLmdb = "diabetic_retinopathy_test_lmdb_%d" % index
             
-        cmdValLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
-            --resize_height=256 \
-            --resize_width=256 \
-            --shuffle \
-            %s/ \
-            %s \
-            %s/%s" % (folderImagesTest, testLabelsFile, destinationFolder, lblTestLmdb)
+            if ordinalEncoding:
+                trainLabelsFileRecoded = trainLabelsFile.replace(".", "_ordinal.")
+                testLabelsFileRecoded = testLabelsFile.replace(".", "_ordinal.")
+                if not os.path.isfile(trainLabelsFileRecoded):
+                    recodeCategoricalToOrdinal(trainLabelsFile, trainLabelsFileRecoded, 5)
+                if not os.path.isfile(testLabelsFileRecoded):
+                    recodeCategoricalToOrdinal(testLabelsFile, testLabelsFileRecoded, 5)
+                testLabelsFile = testLabelsFileRecoded
+                trainLabelsFile = trainLabelsFileRecoded
+                
+                lblTrainLmdb = "diabetic_retinopathy_train_ordinal.leveldb"
+                lblTestLmdb = "diabetic_retinopathy_test_ordinal.leveldb"
             
-        #./build/tools/compute_image_mean /media/niko/data/data/DiabeticRetinopathy/diabetic_retinopathy_train_lmdb /media/niko/data/data/DiabeticRetinopathy/diabetic_retinopathy_mean_train.binaryproto
-        cmdCreateImagenetMeanTrain = "./build/tools/compute_image_mean %s/%s \
-      %s" % (destinationFolder, lblTrainLmdb, binaryProtoFile)
+                  
+            cmdTrainLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
+                --resize_height=256 \
+                --resize_width=256 \
+                --shuffle \
+                %s/ \
+                %s \
+                %s/%s" % (folderImagesTrain, trainLabelsFile, destinationFolder, lblTrainLmdb)
+                
+            cmdValLmdb = "GLOG_logtostderr=1 build/tools/convert_imageset \
+                --resize_height=256 \
+                --resize_width=256 \
+                --shuffle \
+                %s/ \
+                %s \
+                %s/%s" % (folderImagesTest, testLabelsFile, destinationFolder, lblTestLmdb)
+                
+            #./build/tools/compute_image_mean /media/niko/data/data/DiabeticRetinopathy/diabetic_retinopathy_train_lmdb /media/niko/data/data/DiabeticRetinopathy/diabetic_retinopathy_mean_train.binaryproto
+            cmdCreateImagenetMeanTrain = "./build/tools/compute_image_mean %s/%s \
+          %s" % (destinationFolder, lblTrainLmdb, binaryProtoFile)
+                
+            print "Creating train lmdb..."
+            return_code = subprocess.call(cmdTrainLmdb, shell=True)
             
-        print "Creating train lmdb..."
-        return_code = subprocess.call(cmdTrainLmdb, shell=True)
-        
-        print "Creating val lmdb..."        
-        
-        return_code = subprocess.call(cmdValLmdb, shell=True)
-        
-        print "Done."
-        
-        print "Creating binary proto file..."  
-        return_code = subprocess.call(cmdCreateImagenetMeanTrain, shell=True)
+            print "Creating val lmdb..."        
+            
+            return_code = subprocess.call(cmdValLmdb, shell=True)
+            
+            print "Done."
+            
+            print "Creating binary proto file..."  
+            return_code = subprocess.call(cmdCreateImagenetMeanTrain, shell=True)
         
         notification = "finished processing images."
     
@@ -322,7 +323,7 @@ if __name__ == "__main__":
     
     labelsFolder = '/home/niko/datasets/DiabeticRetinopathyDetection/processed/run-normal'
     destinationFolder = '/media/niko/data/data/DiabeticRetinopathy'
-    configurations = ['run-normal', 'run-contrast-1', 'run-contrast-2', 'run-hue-1', 'run-hue-2', 'run-sat-1', 'run-sat-2', 'run-stretch']
+    configurations = ['run-normal', 'run-normal', 'run-normal', 'run-normal', 'run-normal', 'run-normal']
     #(configurations, prepareImages=False, clearExisting=False, ordinalEncoding=True, commonDestination=None)
     prepareDatasetsForSelectedConfiguration(configurations, prepareImages=True, ordinalEncoding=False, create_lmdb=True, commonDestination=destinationFolder)
         

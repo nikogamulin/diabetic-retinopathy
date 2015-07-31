@@ -58,9 +58,9 @@ def vis_square(data, padsize=1, padval=0):
 
     
 if __name__ == '__main__':
-    mdl = '/home/niko/caffe-models/diabetic-retinopathy-detection/lenet_small_kernels.prototxt'
-    pretrainedMdl = '/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/run-normal_compare_strides/lenet_pca_small_kernels_iter_210000.caffemodel'
-    SELECTED_FOLDER, SOURCE_IMAGES_FOLDER_TRAIN, SOURCE_IMAGES_FOLDER_TEST, DATA_IMAGES_TRAIN, DATA_IMAGES_TEST, DATA_IMAGES_TEST_AUGMENTED, TRAIN_LABELS_FILE, TEST_LABELS_FILE, BINARY_PROTO_FILE = getPathsForConfig('run-normal')
+    mdl = '/home/niko/caffe-models/diabetic-retinopathy-detection/deep_v1.prototxt'
+    pretrainedMdl = '/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/deep_v1_2_iter_400000.caffemodel'
+    SELECTED_FOLDER, SOURCE_IMAGES_FOLDER_TRAIN, SOURCE_IMAGES_FOLDER_TEST, DATA_IMAGES_TRAIN, DATA_IMAGES_TEST, TRAIN_LABELS_FILE, TEST_LABELS_FILE, BINARY_PROTO_FILE = getPathsForConfig('run-normal')
     net = initializeModel(mdl, pretrainedMdl, BINARY_PROTO_FILE, imageDims=(227,227))
     
     for imageFile in IMAGE_FILES:
@@ -71,27 +71,27 @@ if __name__ == '__main__':
         # take an array of shape (n, height, width) or (n, height, width, channels)
         #  and visualize each (height, width) thing in a grid of size approx. sqrt(n) by sqrt(n)
         
-        filters = net.params['conv1'][0].data
-        vis_square(filters.transpose(0, 2, 3, 1))
+        #filters = net.params['conv1_2'][0].data
+        #vis_square(filters.transpose(0, 2, 3, 1))
         
-        feat = net.blobs['conv1'].data[4, :40]
+        feat = net.blobs['conv1_2'].data[4, :40]
         vis_square(feat, padval=1)
         
-        filters = net.params['conv2'][0].data
+        filters = net.params['conv2_2'][0].data
         #('conv2', (256, 48, 5, 5)),
         #vis_square(filters[:48].reshape(48**2, 5, 5))
         #vis_square(filters[:16].reshape(16**2, 12, 12))
         #vis_square(filters[:20].reshape(20**2, 22, 22))
-        vis_square(filters[:20].reshape(20**2, 4, 4))
+        vis_square(filters[:64].reshape(64**2, 3, 3))
         
         #feat = net.blobs['conv2'].data[0, :36]
-        feat = net.blobs['conv2'].data[0, :96]
+        feat = net.blobs['conv2_2'].data[0, :96]
         vis_square(feat, padval=1)
         
         #feat = net.blobs['conv3'].data[4]
         #vis_square(feat, padval=0.5)
         
-        feat = net.blobs['conv4'].data[4]
+        feat = net.blobs['conv3_3'].data[4]
         vis_square(feat, padval=0.5)
         
         #feat = net.blobs['conv5'].data[4]
@@ -102,7 +102,7 @@ if __name__ == '__main__':
         
         continue
         
-        feat = net.blobs['fc6'].data[4]
+        feat = net.blobs['ip1'].data[4]
         plt.subplot(2, 1, 1)
         plt.plot(feat.flat)
         plt.subplot(2, 1, 2)
@@ -110,7 +110,7 @@ if __name__ == '__main__':
         
         plt.show()
         
-        feat = net.blobs['fc7'].data[4]
+        feat = net.blobs['ip2'].data[4]
         plt.subplot(2, 1, 1)
         plt.plot(feat.flat)
         plt.subplot(2, 1, 2)
