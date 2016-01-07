@@ -1,0 +1,18 @@
+net: "/home/niko/caffe-models/diabetic-retinopathy-detection/deep_train_test_v1.prototxt"
+
+test_iter: 1000
+test_interval: 1000
+#base_lr: 0.01
+base_lr: 0.001
+lr_policy: "step"
+gamma: 0.1
+stepsize: 100000
+display: 20
+max_iter: 450000
+momentum: 0.9
+weight_decay: 0.0005
+snapshot: 10000
+
+snapshot_prefix: "/home/niko/caffe-models/diabetic-retinopathy-detection/snapshot/deep_v1_2"
+# uncomment the following to default to CPU mode solving
+#solver_mode: CPU
